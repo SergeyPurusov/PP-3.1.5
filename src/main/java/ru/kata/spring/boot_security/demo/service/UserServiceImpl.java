@@ -27,12 +27,13 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public void addUser(User user) {
+    public boolean addUser(User user) {
         User userFromDB = userRepository.findByUsername(user.getUsername());
         if (userFromDB == null) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
             userRepository.save(user);
         }
+        return false;
     }
 
     @Override
@@ -59,10 +60,11 @@ public class UserServiceImpl implements UserService, UserDetailsService {
 
     @Override
     @Transactional
-    public void deleteUserById(Long id) {
+    public boolean deleteUserById(Long id) {
         if (userRepository.findById(id).isPresent()) {
             userRepository.deleteById(id);
         }
+        return false;
     }
 
     @Override
@@ -75,6 +77,22 @@ public class UserServiceImpl implements UserService, UserDetailsService {
     @Transactional(readOnly = true)
     public User getUserByName(String username) {
         return userRepository.findByUsername(username);
+    }
+
+    @Override
+    @Transactional
+    public boolean updateUser(User user) throws InvalidParameterException {
+        if (userRepository.findByUsername(user.getUsername()) != null &&
+                !userRepository.findByUsername(user.getUsername()).getId().equals(user.getId())) {
+            return false;
+        }
+        if (user.getPassword().isEmpty()) {
+            user.setPassword(userRepository.findById(user.getId()).get().getPassword());
+        } else {
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+        userRepository.save(user);
+        return true;
     }
 
     @Override
